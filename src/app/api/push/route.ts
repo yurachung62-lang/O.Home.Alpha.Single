@@ -9,6 +9,7 @@
 //   VAPID_PRIVATE_KEY  비밀 키 (base64url) — 절대 공개하지 말 것
 //   PUSH_SECRET        Supabase 트리거와 맞춘 비밀 문자열 — 아무나 이 주소로 알림을 쏘지 못하게
 import { encryptPayload, vapidHeader, type PushSub } from '@/lib/webPush';
+import { siteMeta } from '@/lib/siteMeta';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -32,10 +33,13 @@ export async function POST(req: Request) {
   const subs = Array.isArray(body.subs) ? body.subs : [];
 
   const str = (v: unknown, max: number) => (typeof v === 'string' ? v.slice(0, max) : '');
+  // 알림 아이콘 — 환경설정의 「브라우저 탭 아이콘」(없으면 기본)
+  const icon = (await siteMeta().catch(() => null))?.favicon;
   const message = Buffer.from(JSON.stringify({
     title: str(n.title, 120) || '새 알림',
     body: str(n.body, 200),
     href: str(n.href, 300) || '/',
+    icon,
     tag: `${str(n.type, 20)}:${str(n.href, 300)}:${str(n.title, 120)}`,
   }));
   const subject = new URL(req.url).origin;
