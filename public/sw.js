@@ -11,8 +11,7 @@ self.addEventListener('push', e => {
     body: d.body || '',
     tag: d.tag || undefined,      // 같은 방의 알림은 하나로 갈아 끼운다
     renotify: !!d.tag,
-    icon: '/favicon.ico',
-    badge: '/favicon.ico',
+    icon: d.icon || '/favicon.ico',
     data: { href: d.href || '/' },
   }));
 });
