@@ -99,16 +99,18 @@ export default function RpPage() {
   );
   /* 얼굴칸(1:1) 위치 — 자관에서 「썸네일 위치 조정」한 값을 여기서도 (커플홈 사용자 제보). 방의 AU면 그 AU 값부터 */
   const faceOf = (c?: Character) => faceCropOf(c, rels, { relId: sel?.relId, auKey: auCharKey ?? undefined });
+  // 캐릭터 권한을 받은 사람은 관리자여도 「권한 받은 캐릭터」가 내 캐릭터 (공동 관리자 — 상대 오너가 관리자일 때)
+  const ownerView = isAdmin && !(user && rpChars.some(c => !!charGrant(c, user.id)));
   const speakChars = useMemo(() => {
     if (rel) {
       // 발화자 목록도 자관에 보이는 순서(왼쪽 먼저)로 — 처음 고른 발화자가 왼쪽 캐릭터가 된다
       const ids = pairSides(rel) ?? rel.members.map(m => m.charId);
       const members = ids.map(id => rpChars.find(c => c.id === id)).filter(Boolean) as Character[];
       // 관리자도 자캐만 (사용자 확정 — 상대 캐릭터까지 목록에 뜨는 게 싫다). 상대 오너는 권한 받은 캐릭터만
-      return isAdmin ? members.filter(c => c.own) : members.filter(c => !!charGrant(c, user?.id));
+      return ownerView ? members.filter(c => c.own) : members.filter(c => !!charGrant(c, user?.id));
     }
-    return isAdmin ? rpChars.filter(c => c.own) : rpChars.filter(c => !!charGrant(c, user?.id));
-  }, [rel, rpChars, isAdmin, user?.id]);
+    return ownerView ? rpChars.filter(c => c.own) : rpChars.filter(c => !!charGrant(c, user?.id));
+  }, [rel, rpChars, ownerView, user?.id]);
 
   const [speaker, setSpeaker] = useState<string>('');   // charId | 'desc' (플레이어 발화는 없앴다, v2.0)
   const [pickOpen, setPickOpen] = useState(false);
@@ -164,7 +166,7 @@ export default function RpPage() {
     if (el && hiddenCount > 0 && el.scrollTop < 30 && keepScroll.current == null) loadMore();
   };
   // 메신저 모양에서 오른쪽(파란 말풍선)에 둘 캐릭터 — 보는 사람 기준 (내 권한 캐릭터, 관리자는 자캐)
-  const rightIds = user ? rpChars.filter(c => !!charGrant(c, user.id) || (!!c.own && isAdmin)).map(c => c.id) : [];
+  const rightIds = user ? rpChars.filter(c => !!charGrant(c, user.id) || (!!c.own && ownerView)).map(c => c.id) : [];
   /* SHOW ALL (커플홈 사용자 요청) — 참여자 누구나, 관리자가 아니어도·모바일(머리줄 숨김)에서도 대화 전부를 새 탭 한 장으로.
      방의 모양(대본/메신저) 그대로, 사진 없이 */
   const showAll = () => {
@@ -583,8 +585,8 @@ export default function RpPage() {
                   // 그래서 같은 방이라도 사람마다 좌우가 반대로 보인다(각자 자기 쪽이 오른쪽).
                   // 삭제된 캐릭터는 발화 당시 기록(charOwn)으로 판단.
                   const rightSide = ch
-                    ? (!!charGrant(ch, user.id) || (!!ch.own && isAdmin))
-                    : (!!m.charOwn && isAdmin);
+                    ? (!!charGrant(ch, user.id) || (!!ch.own && ownerView))
+                    : (!!m.charOwn && ownerView);
                   // 메신저 방의 이름 — 말하는 캐릭터가 바뀔 때만 (사용자 확정): 같은 캐릭터가 이어 말하면 생략,
                   // 상대 글 바로 다음에 내가 일반 RP를 쓰는 식으로 바뀌면 적는다. 기본 방은 늘 적는다
                   const prevMsg = arr[mi - 1];
