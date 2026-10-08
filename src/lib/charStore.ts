@@ -172,8 +172,11 @@ export function charWithAu(c: Character, auKey?: string | null): Character {
 export interface CharGrant { userId: string; level: 'play' | 'edit' }
 
 /** 이 회원이 캐입으로 쓸 수 있는 캐릭터 (커플홈 — 감상타래·메모장 공용) — 관리자는 자캐, 상대 오너는 권한 받은 캐릭터 */
-export const inCharChoices = (chars: Character[], viewer: { isAdmin: boolean; id?: string }): Character[] =>
-  chars.filter(c => (viewer.isAdmin && c.own) || (!!viewer.id && !!charGrant(c, viewer.id)));
+export const inCharChoices = (chars: Character[], viewer: { isAdmin: boolean; id?: string }): Character[] => {
+  // 캐릭터 권한을 받은 사람은 관리자여도 권한 받은 캐릭터만 (공동 관리자 — 상대 오너가 관리자일 때)
+  const partner = !!viewer.id && chars.some(c => !!charGrant(c, viewer.id));
+  return chars.filter(c => (viewer.isAdmin && !partner && c.own) || (!!viewer.id && !!charGrant(c, viewer.id)));
+};
 
 /** 이 자관의 멤버 캐릭터 중 하나라도 권한을 받은 회원인가 (v2.0) — 문답 숨김 판정 */
 export function hasRelGrant(
