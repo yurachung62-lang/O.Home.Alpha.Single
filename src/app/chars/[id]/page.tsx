@@ -232,7 +232,7 @@ function CharDetailInner() {
 
         {/* 중앙 아트 — 스티키 · 클릭하면 전체 보기(라이트박스), 추가 아트는 아래 점을 눌러 넘겨보기 */}
         {(() => {
-          const arts = eff.arts && eff.arts.length > 0 ? eff.arts : (eff.artId ? [eff.artId] : []);
+          const arts = viewArts(eff.arts && eff.arts.length > 0 ? eff.arts : (eff.artId ? [eff.artId] : []));
           if (arts.length === 0 && !eff.artUrl) {
             return <div className={`profile-center ph ${ch.thumbClass}`} style={phStyle([eff?.color ?? ch.color])}><span>CHARACTER FULL ART</span></div>;
           }
@@ -345,7 +345,7 @@ function CharDetailInner() {
       )}
       {/* 대표 아트 전체 보기 — 등록된 아트 전부를 ‹ › 로 넘겨 본다 (커플홈 사용자 요청) */}
       {lbOpen && eff && (() => {
-        const arts = eff.arts && eff.arts.length > 0 ? eff.arts : (eff.artId ? [eff.artId] : []);
+        const arts = viewArts(eff.arts && eff.arts.length > 0 ? eff.arts : (eff.artId ? [eff.artId] : []));
         const srcs = arts.length ? arts : (eff.artUrl ? [eff.artUrl] : []);
         return srcs.length
           ? <Lightbox srcs={srcs} index={Math.min(artIdx, srcs.length - 1)} onClose={() => setLbOpen(false)} />
@@ -372,6 +372,12 @@ function ArtCropModal({ fileRef, ratio, crop, onClose, onApply }: {
       initial={crop} onClose={onClose} onApply={onApply} />
   );
 }
+
+/** 캐릭터 상세에서만 — 두 번째로 넣은 아트(보통 전신)를 먼저 보여 준다 (사용자 요청).
+ *  첫 번째 아트(얼굴)는 리스트 썸네일·자관 카드 등 다른 곳에서 그대로 대표로 쓰인다.
+ *  이 화면의 「보일 위치 조정」(artCrop)도 여기서 먼저 보이는 아트에 적용된다 */
+const viewArts = (arts: string[]): string[] =>
+  arts.length > 1 ? [arts[1], arts[0], ...arts.slice(2)] : arts;
 
 export default function CharDetailPage() {
   // useSearchParams는 Suspense 경계 필요 (Next App Router)
