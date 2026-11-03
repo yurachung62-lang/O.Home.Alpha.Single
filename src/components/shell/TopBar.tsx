@@ -5,7 +5,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { boardEntries, useMenuSettings, buildMenu } from '@/lib/menuStore';
-import { Relation, REL_SEED, openableRels, relMenuEntries } from '@/lib/charStore';
+import { Relation, REL_SEED, openableRels, relMenuEntries, relPath } from '@/lib/charStore';
 import { useLocalList } from '@/lib/postStore';
 import { useBoards } from '@/lib/boardStore';
 import { useSections, sectionMenuEntries } from '@/lib/sectionStore';
@@ -47,6 +47,14 @@ export function TopBar() {
   // 자관마다 메뉴 항목 (커플홈 사용자 요청) — 이 사람이 열 수 있는 자관만
   const [rels, , relsLoaded] = useLocalList<Relation>('ohome.rels.v1', REL_SEED);
   const relEntries = relMenuEntries(openableRels(rels, { isAdmin, loggedIn: !!user }));
+  /* 자관 메뉴는 끊기지 않게 id 주소(/rels/<id>)로 저장돼 있다 — 누를 때는 별명 주소로 바로 보낸다
+     (사용자 요청 — 주소창에 잠깐 예전 주소가 비치지 않게). 별명이 없으면 그대로 id 주소 */
+  const relHref = (href: string) => {
+    const m = href.match(/^\/rels\/([^/?#]+)(.*)$/);
+    if (!m) return href;
+    const r = rels.find(x => x.id === decodeURIComponent(m[1]));
+    return r ? relPath(r) + m[2] : href;
+  };
   // 저장 설정 로드 전에는 메뉴·로고를 그리지 않음 — 새로고침 시 기본 구성이 깜빡이는 것 방지 (v1.9)
   const ready = menuLoaded && boardsLoaded && relsLoaded;
   const menu = ready
@@ -107,7 +115,8 @@ export function TopBar() {
 
   // 편집모드 중에는 이동 전에 종료 확인 (v1.8)
   // 지금 보고 있는 메뉴를 다시 누르면 그 페이지를 새로 불러옴 — 다시 접속하는 느낌 (v1.9 사용자 요청)
-  const nav = (href: string) => {
+  const nav = (rawHref: string) => {
+    const href = relHref(rawHref);
     // 커스텀 링크에 다른 사이트 풀주소를 걸 수 있다 (v2.0) — 외부는 새 창으로
     if (/^https?:\/\//.test(href)) { window.open(href, '_blank'); return; }
     if (guardNav(href)) return;
@@ -201,7 +210,7 @@ export function TopBar() {
           ) : (
             <button
               key={item.label}
-              className={pathname === item.href ? 'on' : ''}
+              className={pathname === relHref(item.href!) ? 'on' : ''}
               onClick={() => nav(item.href!)}
             >
               {item.label}{dotHrefs.has(item.href!) && <small className="nd">●</small>}
