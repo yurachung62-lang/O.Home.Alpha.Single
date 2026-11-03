@@ -374,7 +374,19 @@ export default function RelDetailPage() {
   // 별명 주소로도 열린다 (v2.0 사용자 요청 — 주소를 나중에 바꿔도 옛 주소가 살아 있게)
   const rel = findByKey(rels, id);
   // 자관 전환 칩으로 다른 자관에 가면 같은 페이지가 재사용될 수 있다 — 보던 AU·일러·탭을 처음 상태로
-  useEffect(() => { setAuId('base'); setArtIdx(0); setQaNo(null); setTab('tl'); }, [id]);
+  // (자관 id 기준 — 주소를 id→별명으로 바꿔 끼울 때는 같은 자관이라 초기화하지 않는다)
+  useEffect(() => { setAuId('base'); setArtIdx(0); setQaNo(null); setTab('tl'); }, [rel?.id]);
+  // 별명(slug)을 정해 둔 자관을 id 주소로 열었으면(메뉴는 id로 연결된다) 주소창을 별명 주소로 바꿔 보여 준다
+  // (사용자 요청 — 주소를 바꿨는데 계속 예전 주소로 뜬다). 화면은 그대로, ?au= 등 뒤쪽도 그대로 둔다
+  useEffect(() => {
+    const s = rel?.slug?.trim();
+    if (!s || decodeURIComponent(id) === s) return;
+    try {
+      const u = new URL(window.location.href);
+      u.pathname = `/rels/${s}`;
+      window.history.replaceState(window.history.state, '', u.toString());
+    } catch { /* 무시 */ }
+  }, [rel?.id, rel?.slug, id]);
   // 주소의 ?au= (별명 또는 id)로 들어오면 그 AU를 펼친 채 시작 (커플홈 사용자 요청 — AU 페이지의 고유 주소)
   useEffect(() => {
     if (!rel) return;
